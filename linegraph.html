@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Excel Data Visualization</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 20px;
+    }
+
+    select {
+      margin-bottom: 10px;
+    }
+
+    canvas {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h2 class="mt-4 mb-4">Excel Data Visualization</h2>
+
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <label for="chartType">Choose a chart type:</label>
+        <select id="chartType" class="form-control">
+          <option value="line">Line Chart</option>
+          <option value="bar">Bar Chart</option>
+          <option value="pie">Pie Chart</option>
+        </select>
+      </div>
+    </div>
+
+    <canvas id="myChart" width="800" height="400"></canvas>
+  </div>
+
+  <script>
+    const fetchData = async () => {
+      const response = await fetch('./graph data.xlsx');
+      const arrayBuffer = await response.arrayBuffer();
+      const data = new Uint8Array(arrayBuffer);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0]; // Assuming data is in the first sheet
+      const sheet = workbook.Sheets[sheetName];
+      const excelData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      return excelData;
+    };
+
+    fetchData().then((excelData) => {
+      const labels = excelData[0].slice(1); // Assuming the first row contains labels for the X-axis
+      const datasets = excelData.slice(1).map((row) => row.slice(1).map(Number));
+
+      const ctx = document.getElementById('myChart').getContext('2d');
+      const chartTypeDropdown = document.getElementById('chartType');
+      let currentChart;
+
+      // Initial rendering
+      renderChart();
+
+      // Event listener for dropdown changes
+      chartTypeDropdown.addEventListener('change', renderChart);
+
+      function renderChart() {
+        const selectedChartType = chartTypeDropdown.value;
+
+        // Destroy the previous chart if it exists
+        if (currentChart) {
+          currentChart.destroy();
+        }
+
+        // Create a new chart based on the selected type
+        currentChart = new Chart(ctx, {
+          type: selectedChartType,
+          data: {
+            labels,
+            datasets: datasets.map((data, index) => ({
+              label: `Dataset ${index + 1}`,
+              data,
+              borderColor: `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 1)`,
+              borderWidth: 2,
+              fill: false,
+            })),
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true,
+              },
+            },
+          },
+        });
+      }
+    });
+  </script>
+
+</body>
+
+</html>
